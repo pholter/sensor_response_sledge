@@ -1265,7 +1265,7 @@ class srsMain(QMainWindow):
         
 
 
-if __name__ == "__main__":
+def main():
     # Open the serial port
     if(len(sys.argv)>1):
         port = sys.argv[1]
@@ -1276,3 +1276,7 @@ if __name__ == "__main__":
     myapp = srsMain()
     myapp.show()
     sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()
