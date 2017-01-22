@@ -1,0 +1,12 @@
+total_steps    : 1600 # Total number of stepper motor steps 
+total_length   : 0.64 # Length of the system
+speed_length   : 0.127 # Length of the distance between the sensors to meas the speed
+freq_init      : 300 # Frequency [Hz]
+freq_set_min   : 5
+freq_set_max   : 2000
+invert_sensors : 1 # [0/1] 
+motor_up_direction : clockwise # [clockwise/anticlockwise]
+
+ind_sensor_up: 3
+ind_sensor_down: 0
+ind_sensor_speed: [2,1]
