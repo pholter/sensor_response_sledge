@@ -31,7 +31,15 @@ except:
         from PyQt4.QtCore import QTimer, QElapsedTimer, Qt
         print('Using pyqt4')
     except:
-        raise Exception('Could not import qt, exting')
+
+        try:
+            from qtpy import QtCore, QtGui, QtWidgets
+            from qtpy.QtWidgets import *
+            from qtpy.QtCore import QTimer, QElapsedTimer, Qt
+            from qtpy.QtGui import QColor
+            print('Using qtpy (Anaconda installation?)')            
+        except:            
+            raise Exception('Could not import qt, exting')
 
 
 
