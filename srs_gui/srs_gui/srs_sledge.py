@@ -36,7 +36,7 @@ except:
 
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-logger = logging.getLogger('srs_gui')
+logger = logging.getLogger('srs_sledge')
 logger.setLevel(logging.DEBUG)
 
 
@@ -537,7 +537,7 @@ class srsMain(QMainWindow):
         
     def _about(self):
         about_str = '\n Sensor Response Sledge (SRS) \n'        
-        about_str += '\n This is srs_gui: ' + self.__version__
+        about_str += '\n This is srs_sledge: ' + self.__version__
         about_str += '\n Copyright Peter Holtermann \n'
         about_str += '\n peter.holtermann@io-warnemuende.de \n'        
         self._about_label = QLabel(about_str)

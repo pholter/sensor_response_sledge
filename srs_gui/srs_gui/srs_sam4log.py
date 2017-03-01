@@ -16,7 +16,8 @@ import argparse
 import multiprocessing
 import pymqdatastream
 import pymqdatastream.connectors.sam4log.pymqds_gui_sam4log as pymqds_gui_sam4log
-import srs_plotxy
+#import srs_plotxy
+from srs_gui import srs_plotxy
 from pymqdatastream.connectors.pyqtgraph import pyqtgraphDataStream
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)

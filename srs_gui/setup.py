@@ -18,7 +18,7 @@ if sys.version_info >= (3,4):
           license='GPLv03',
           packages=['srs_gui'],
           scripts = [],
-          entry_points={ 'console_scripts': ['srs_gui=srs_gui.srs_gui:main',\
+          entry_points={ 'console_scripts': ['srs_sledge=srs_gui.srs_sledge:main',\
           'srs_sam4log=srs_gui.srs_sam4log:main'], },
           package_data = {'':['VERSION']},
           zip_safe=False)
