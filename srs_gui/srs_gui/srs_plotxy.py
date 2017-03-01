@@ -172,7 +172,7 @@ class srspyqtgraphMainWindow(QtWidgets.QMainWindow):
 def main():
     logging_level = logging.DEBUG
     print('Hallo!')
-    datastream = pyqtgraphDataStream(name = 'srs_plotxy', logging_level=logging_level)
+    datastream = pyqtgraphDataStream(name = 'srs_plotxy', logging_level=logging_level,bufsize=5000000)
 
 
     app = QtWidgets.QApplication(sys.argv)
