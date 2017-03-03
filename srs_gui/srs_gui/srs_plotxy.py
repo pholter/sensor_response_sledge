@@ -19,7 +19,7 @@ import pymqdatastream.connectors.pyqtgraph.pymqds_plotxy as pymqds_plotxy
 from pymqdatastream.connectors.pyqtgraph.pymqds_plotxy import pyqtgraphDataStream,pyqtgraphMainWindow,pyqtgraphWidget
 # Has to be imported after importing Qt5, otherwise Qt4/Qt5 problems occur
 import pyqtgraph as pg
-
+import pyqtgraph.exporters
 
 # Setup logging module
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
@@ -31,17 +31,20 @@ logger.setLevel(logging.DEBUG)
 class srspyqtgraphWidget(pymqds_plotxy.pyqtgraphWidget):
     def __init__(self,*args,**kwargs):
         super(srspyqtgraphWidget, self).__init__(*args,**kwargs)
-        
         self.vlines = []
         # Add a meas button
         self.button_meas = QtWidgets.QPushButton('Measure', self)
         self.button_meas.clicked.connect(self.handle_meas)
         self.button_meas.setCheckable(True)
+        self.button_savefig = QtWidgets.QPushButton('Screenshot', self)
+        self.button_savefig.clicked.connect(self.handle_savefig)
         self.button_bottom_layout.removeWidget(self.button_layout_stretch)
         self.button_bottom_layout.removeWidget(self.label_meas)
         self.button_bottom_layout.addWidget(self.button_meas)
+        self.button_bottom_layout.addWidget(self.button_savefig)        
         self.button_layout_stretch = self.button_bottom_layout.addStretch()
         self.button_bottom_layout.addWidget(self.label_meas)
+
 
         self.pyqtgraph_axes.scene().sigMouseClicked.connect(self.srsmouseClicked)
         self.pyqtgraph_axes.scene().sigMouseMoved.connect(self.srsmouseMoved)        
@@ -108,7 +111,7 @@ class srspyqtgraphWidget(pymqds_plotxy.pyqtgraphWidget):
 
                             self.meas_text = pg.TextItem(text=facstr)
                             self.meas_text.setPos(xd[indfac],yd[indfac])
-                            text_fac = self.pyqtgraph_axes.addItem(self.meas_text)                            
+                            text_fac = self.pyqtgraph_axes.addItem(self.meas_text)
 
                 
             if(len(self.vlines) == 1): 
@@ -143,10 +146,24 @@ class srspyqtgraphWidget(pymqds_plotxy.pyqtgraphWidget):
 
             if(self.meas_line != None):
                 self.pyqtgraph_axes.removeItem(self.meas_line)
+                self.pyqtgraph_axes.removeItem(self.meas_text)
+                self.pyqtgraph_axes.removeItem(self.meas_fac)
+                self.pyqtgraph_axes.removeItem(self.meas_start)
+                self.pyqtgraph_axes.removeItem(self.meas_stop)                
                 self.pyqtgraph_leg.removeItem('measured')
+                self.pyqtgraph_leg.removeItem('measured_fac')
+                self.pyqtgraph_leg.removeItem('measured_start')
+                self.pyqtgraph_leg.removeItem('measured_stop')
+
                 
             self.vlines = []
 
+            
+    def handle_savefig(self):
+        exporter = pg.exporters.ImageExporter(self.pyqtgraph_axes.plotItem)
+        # TODO, add a proper filename here
+        exporter.export('filename.png')
+        
 
 
 

@@ -76,7 +76,7 @@ def _start_pymqds_srsplotxy(addresses):
             return False
         
 
-        datastream.set_stream_settings(stream, bufsize = 5000, plot_data = True, ind_x = 1, ind_y = 2, plot_nth_point = 10)
+        datastream.set_stream_settings(stream, bufsize = 500000, plot_data = True, ind_x = 1, ind_y = 2, plot_nth_point = 1)
         datastream.plot_datastream(True)
         datastream.set_plotting_mode(mode='cont')        
         datastreams.append(datastream)
