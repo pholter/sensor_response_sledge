@@ -15,18 +15,18 @@ import os,sys
 import argparse
 import multiprocessing
 import pymqdatastream
-import pymqdatastream.connectors.sam4log.pymqds_gui_sam4log as pymqds_gui_sam4log
+import pymqdatastream.connectors.todl.pymqds_gui_todl as pymqds_gui_todl
 #import srs_plotxy
 from srs_gui import srs_plotxy
 from pymqdatastream.connectors.pyqtgraph import pyqtgraphDataStream
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-logger = logging.getLogger('srs_sam4log')
+logger = logging.getLogger('srs_todl')
 logger.setLevel(logging.DEBUG)
 
-class srssam4logMainWindow(pymqds_gui_sam4log.sam4logMainWindow):
+class srstodlMainWindow(pymqds_gui_todl.todlMainWindow):
     def __init__(self,*args,**kwargs):
-        super(srssam4logMainWindow, self).__init__(*args,**kwargs)
+        super(srstodlMainWindow, self).__init__(*args,**kwargs)
         self._info_plot_bu.clicked.disconnect(self._plot_clicked)
         self._info_plot_bu.clicked.connect(self._srs_plot_clicked)                
         print('Init')
@@ -43,10 +43,10 @@ class srssam4logMainWindow(pymqds_gui_sam4log.sam4logMainWindow):
         # this does not work with python 2.7 
         multiprocessing.set_start_method('spawn',force=True)
         addresses = []
-        for stream in self.sam4log.Streams:
+        for stream in self.todl.Streams:
             print(stream.get_family())
-            if(stream.get_family() == "sam4log adc"):
-                addresses.append(self.sam4log.get_stream_address(stream))
+            if(stream.get_family() == "todl adc"):
+                addresses.append(self.todl.get_stream_address(stream))
                 
         self._plotxyprocess = multiprocessing.Process(target =_start_pymqds_srsplotxy,args=(addresses,))
         self._plotxyprocess.start()    
@@ -108,7 +108,7 @@ def _start_pymqds_srsplotxy(addresses):
 def main():
     print(sys.version_info)
     app = QtWidgets.QApplication(sys.argv)
-    window = srssam4logMainWindow()
+    window = srstodlMainWindow()
     window.show()
     sys.exit(app.exec_())
 
