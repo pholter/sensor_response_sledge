@@ -18,6 +18,7 @@ import yaml
 import logging
 import datetime
 import os
+import psutil
 
 # Import qt
 try:
@@ -168,7 +169,33 @@ def serial_lock_file(port,remove=False):
 # Serial baud rates
 baud = [300,600,1200,2400,4800,9600,19200,38400,57600,115200,576000,921600]
 
+#QtWidgets.QWidget
 class srsMain(QMainWindow):
+    def __init__(self):
+        # Do the rest
+        QWidget.__init__(self)
+        self.mainwidget = srsWidget()        
+        # Create the menu
+        self.file_menu = QMenu('&File',self)
+        #self.file_menu.addAction('&Settings',self.fileSettings,Qt.CTRL + Qt.Key_S)
+        self.file_menu.addAction('&Show serial data',self.mainwidget._show_serial_data,Qt.CTRL + Qt.Key_D)        
+        self.file_menu.addAction('&Quit',self._quit,Qt.CTRL + Qt.Key_Q)
+        self.about_menu = QMenu('&About',self)
+        self.about_menu.addAction('&About',self.mainwidget._about)
+        self.menuBar().addMenu(self.file_menu)
+        self.menuBar().addMenu(self.about_menu)
+
+        
+
+        self.setCentralWidget(self.mainwidget)
+        # Focus 
+        self.mainwidget.setFocus()
+
+    def _quit(self):
+        self.mainwidget._quit()        
+        self.close()        
+        
+class srsWidget(QWidget):
     """
 
     Sensor response sledge
@@ -192,18 +219,8 @@ class srsMain(QMainWindow):
         self.delaytimer_connected = [] # Functions connected to the delaytimer        
 
         self._widgets = [] # All stand-alone widgets
-        # Create the menu
-        self.file_menu = QMenu('&File',self)
 
-        #self.file_menu.addAction('&Settings',self.fileSettings,Qt.CTRL + Qt.Key_S)
-        self.file_menu.addAction('&Show serial data',self._show_serial_data,Qt.CTRL + Qt.Key_D)        
-        self.file_menu.addAction('&Quit',self._quit,Qt.CTRL + Qt.Key_Q)
-        self.about_menu = QMenu('&About',self)
-        self.about_menu.addAction('&About',self._about)        
-        self.menuBar().addMenu(self.file_menu)
-        self.menuBar().addMenu(self.about_menu)        
-        mainwidget = QWidget(self)
-        mainlayout = QGridLayout(mainwidget)
+        mainlayout = QGridLayout(self)
 
         sensorwidget = QWidget(self) # The sensor output
         sensorlayout = QGridLayout(sensorwidget)                
@@ -476,10 +493,7 @@ class srsMain(QMainWindow):
 
         
 
-        # Focus 
-        mainwidget.setFocus()
-        self.setCentralWidget(mainwidget)
-        #self.resize(800,500)
+
 
         # update program
         self._init_open_save_program()        
@@ -662,7 +676,13 @@ class srsMain(QMainWindow):
             #self.sender().setText('Stop')
             self.delaytimer.timeout.connect(self.send_enable)
             self.delaytimer_connected.append(self.send_enable)
-            self.delaytimer.start()            
+            self.delaytimer.start()
+            # Try to send to srs logger device
+            try:
+                print(self.srs_logger.p_to_process)
+                self.srs_logger.p_to_process.send('Sledge: start')
+            except Exception as e:
+                print('No connection to srs logger:' + str(e))
         elif(self.sender() == self.prog_stop_bu):
             self._doing_program = False
             self.prog_status_bu.setText('Done')            
@@ -676,6 +696,11 @@ class srsMain(QMainWindow):
             self.delaytimer_connected = []                
             logger.debug(funcname + ': Stop')            
             #self.sender().setText('Start')
+            try:
+                print(self.srs_logger.p_to_process)
+                self.srs_logger.p_to_process.send('Sledge: stop')
+            except Exception as e:
+                print('No connection to srs logger:' + str(e))            
 
 
     def _init_open_save_program(self):
@@ -894,6 +919,11 @@ class srsMain(QMainWindow):
     
 
     def _show_firmware(self):
+        try:
+            print('Sending to pipe ...')
+            self.srs_logger.p_to_process.send('Firmware')
+        except Exception as e:
+            print('No connection:' + str(e))        
         if(self.serial_open):
             self.firmware_version = self.get_version()        
             self._text_firmware = QPlainTextEdit()
@@ -1065,6 +1095,12 @@ class srsMain(QMainWindow):
                     self.speed_meas_state = 0
                     self._doing_program = False
                     self.delaytimer.stop()
+                    try:
+                        print(self.srs_logger.p_to_process)
+                        self.srs_logger.p_to_process.send('Sledge: done')
+                    except Exception as e:
+                        print('No connection to srs logger:' + str(e))
+                        
                     try:
                         self.delaytimer.timeout.disconnect()
                     except Exception as e:
@@ -1269,7 +1305,75 @@ class srsMain(QMainWindow):
                 logger.debug(funcname + ': Disconnect: ' + str(e))                                    
 
             self.delaytimer_connected = []
-        #self.statusBar().showMessage(sender.text() + ' was released')        
+        #self.statusBar().showMessage(sender.text() + ' was released')
+
+
+
+#
+#
+# srs Sledge Device
+#
+#
+class srssledgeDevice():
+    """
+
+    """
+    def __init__(self, device_changed_function=None):
+        print('srssledge Device')
+        self.device_changed_function = device_changed_function
+        
+        
+    def setup(self,name=None, mainwindow = None):
+        """
+        Args: 
+          mainwindow: The mainwindow, to have an access to all other widgets if wanted
+        """
+        self.name = name
+        self.srs_logger = None # For the srs logger interconnection
+        print('srs Sledge Setup')
+        self.w = srsWidget()
+        self.mainwindow = mainwindow
+        if(mainwindow is not None):
+            print('Checking for other devices')
+            for d in self.mainwindow.devices:
+                print('Device:' + str(d.name))
+                # Check if we have a srs logger
+                if(d.name == 'srs logger'):
+                    print('Found a srs logger!')
+                    # Interconnect both
+                    self.srs_logger = d
+                    self.w.srs_logger = d # Give it also to the srsWidget               
+                    d.srs_sledge = self
+                    if False:
+                        try:
+                            print(self.srs_logger.p_to_process)
+                            self.srs_logger.p_to_process.send('hallo!')
+                        except Exception as e:
+                            print('No connection:' + str(e))
+
+        
+        self.w.show()
+
+    def show_data(self):
+        print('Nothing to show, sorry ...')
+
+        
+    def close(self):
+        """
+        Cleanup of the device
+        """
+        self.w.close()
+
+        
+    def device_changed(self,fname):
+        """A function called by 
+
+        """
+        print('Something changed here:',fname)
+        # Call the update function
+        if(not(self.device_changed_function == None)):
+            self.device_changed_function(fname)
+        
         
 
 
