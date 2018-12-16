@@ -19,6 +19,7 @@ import pymqdatastream.connectors.pyqtgraph.pymqds_plotxy as pymqds_plotxy
 from pymqdatastream.connectors.pyqtgraph.pymqds_plotxy import pyqtgraphDataStream,pyqtgraphMainWindow,pyqtgraphWidget
 # Has to be imported after importing Qt5, otherwise Qt4/Qt5 problems occur
 import pyqtgraph as pg
+import pylab as pl
 
 
 # Setup logging module
@@ -32,7 +33,8 @@ class srspyqtgraphWidget(pymqds_plotxy.pyqtgraphWidget):
     def __init__(self,*args,**kwargs):
         super(srspyqtgraphWidget, self).__init__(*args,**kwargs)
         
-        self.vlines = []
+        self.vlines   = []
+        self.tmplines = []        
         # Add a meas button
         self.button_meas = QtWidgets.QPushButton('Measure', self)
         self.button_meas.clicked.connect(self.handle_meas)
@@ -77,16 +79,22 @@ class srspyqtgraphWidget(pymqds_plotxy.pyqtgraphWidget):
                             self.meas_line = pg.PlotDataItem( pen=col,name = 'measured')
                             li = self.pyqtgraph_axes.addItem(self.meas_line)
                             self.meas_line.setData(x=xd,y=yd, pen=col)
+                            self.tmplines.append(self.meas_line)
+                            self.tmplines.append(li)
                             # Calculate min, max, time and 63 percent
                             # TODO, this can also be done in an extra function
                             #START
                             self.meas_start = pg.PlotDataItem( pen=None,symbol='+',name = 'measured_start')
+                            self.tmplines.append(self.meas_start)
                             li_start = self.pyqtgraph_axes.addItem(self.meas_start)                            
                             self.meas_start.setData(x=[xd[0],],y=[yd[0],],pen=None)
+                            self.tmplines.append(li_start)
                             #STOP
                             self.meas_stop = pg.PlotDataItem( pen=None,symbol='+',name = 'measured_stop')
                             li_stop = self.pyqtgraph_axes.addItem(self.meas_stop)                            
                             self.meas_stop.setData(x=[xd[-1],],y=[yd[-1],],pen=None)
+                            self.tmplines.append(li_stop)                                                        
+                            self.tmplines.append(self.meas_stop)                            
                             # 63.2%
                             dy = yd[-1] - yd[0]
                             fac = 0.632
@@ -103,12 +111,28 @@ class srspyqtgraphWidget(pymqds_plotxy.pyqtgraphWidget):
                                 li_fac = self.pyqtgraph_axes.addItem(self.meas_fac)                            
                                 self.meas_fac.setData(x=[xfac,],y=[yfac,],pen=None)
                                 facstr = '63.2 per cent (%.3f of %.3f) in %f s' % (yfac,yd[-1],tfac)
+                                self.tmplines.append(li_fac)
+                                self.tmplines.append(self.meas_fac)
                             else:
                                 facstr = 'Did not find data'
 
                             self.meas_text = pg.TextItem(text=facstr)
                             self.meas_text.setPos(xd[indfac],yd[indfac])
-                            text_fac = self.pyqtgraph_axes.addItem(self.meas_text)                            
+                            text_fac = self.pyqtgraph_axes.addItem(self.meas_text)
+                            self.tmplines.append(self.meas_text)
+                            self.tmplines.append(text_fac)
+
+                            # Make a matplotlib plot for fancy plot
+                            # TODO, create a name
+                            figname = 'NTC response'
+                            pl.figure(figname)
+                            pl.clf()
+                            #pl.ion()
+                            pl.plot(xd,yd)
+                            pl.ylabel('Voltage')
+                            pl.xlabel('Time [s]')                            
+                            pl.draw()
+                            pl.show()
 
                 
             if(len(self.vlines) == 1): 
@@ -141,9 +165,17 @@ class srspyqtgraphWidget(pymqds_plotxy.pyqtgraphWidget):
             for vLine in self.vlines:
                 self.pyqtgraph_axes.removeItem(vLine)
 
+                
+            for vLine in self.tmplines:
+                self.pyqtgraph_axes.removeItem(vLine)
+                
+
             if(self.meas_line != None):
                 self.pyqtgraph_axes.removeItem(self.meas_line)
                 self.pyqtgraph_leg.removeItem('measured')
+                self.pyqtgraph_leg.removeItem('measured_stop')
+                self.pyqtgraph_leg.removeItem('measured_start')
+                self.pyqtgraph_leg.removeItem('measured_fac')                
                 
             self.vlines = []
 

@@ -1,10 +1,11 @@
-total_steps    : 1600 # Total number of stepper motor steps 
-total_length   : 0.64 # Length of the system
-speed_length   : 0.127 # Length of the distance between the sensors to meas the speed
+system         : "ISW sledge"
+total_steps    : 990 # Total number of stepper motor steps 
+total_length   : 0.42 # Length of the system [m] [between start and stop sensors]
+speed_length   : 0.16 # Length of the distance between the sensors to meas the speed [m]
 freq_init      : 300 # Frequency [Hz]
 freq_set_min   : 5
 freq_set_max   : 3000
-invert_sensors : 1 # [0/1] 
+invert_sensors : 0 # [0/1] 
 motor_up_direction : clockwise # [clockwise/anticlockwise]
 programs_filename : "programs.yaml"
 

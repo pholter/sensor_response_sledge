@@ -15,21 +15,34 @@ import os,sys
 import argparse
 import multiprocessing
 import pymqdatastream
-import pymqdatastream.connectors.sam4log.pymqds_gui_sam4log as pymqds_gui_sam4log
+import pymqdatastream.connectors.todl.pymqds_gui_todl as pymqds_gui_todl
 #import srs_plotxy
 from srs_gui import srs_plotxy
 from pymqdatastream.connectors.pyqtgraph import pyqtgraphDataStream
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
-logger = logging.getLogger('srs_sam4log')
+logger = logging.getLogger('srs_todl')
 logger.setLevel(logging.DEBUG)
 
-class srssam4logMainWindow(pymqds_gui_sam4log.sam4logMainWindow):
+class srstodlMainWindow(pymqds_gui_todl.todlMainWindow):
     def __init__(self,*args,**kwargs):
-        super(srssam4logMainWindow, self).__init__(*args,**kwargs)
-        self._info_plot_bu.clicked.disconnect(self._plot_clicked)
-        self._info_plot_bu.clicked.connect(self._srs_plot_clicked)                
+        super(srstodlMainWindow, self).__init__(*args,**kwargs)
+        #self._info_plot_bu.clicked.disconnect(self._plot_clicked)
+        
         print('Init')
+        self.todldev = self.add_device('todl')
+        # Change the 
+        #todldev._info_plot_bu.clicked.disconnect(self._plot_clicked)
+        self.todldev._info_plot_bu.clicked.disconnect(self.todldev._plot_clicked_adc)        
+        self.todldev._info_plot_bu.clicked.connect(self._srs_plot_clicked)
+
+
+        # Add the plotting function to the open click (hope its after the other function has been called)
+        self.todldev.serial_open_bu.clicked.connect(self._srs_plot_clicked)
+        # Opening the TODL
+        #self.todldev.serial_open("Open",'dev/ttyACM0',912600)
+        self.todldev.combo_baud.setCurrentIndex(len(pymqds_gui_todl.baud)-1)
+
 
     def _srs_plot_clicked(self):
         """
@@ -43,11 +56,14 @@ class srssam4logMainWindow(pymqds_gui_sam4log.sam4logMainWindow):
         # this does not work with python 2.7 
         multiprocessing.set_start_method('spawn',force=True)
         addresses = []
-        for stream in self.sam4log.Streams:
+        for stream in self.todldev.todl.Streams:
             print(stream.get_family())
-            if(stream.get_family() == "sam4log adc"):
-                addresses.append(self.sam4log.get_stream_address(stream))
-                
+            if(stream.get_family() == "todl adc"):
+                addresses.append(self.todldev.todl.get_stream_address(stream))
+
+
+        #print('addresses',addresses)
+        #input('ffds')
         self._plotxyprocess = multiprocessing.Process(target =_start_pymqds_srsplotxy,args=(addresses,))
         self._plotxyprocess.start()    
 
@@ -76,18 +92,10 @@ def _start_pymqds_srsplotxy(addresses):
             return False
         
 
-        datastream.set_stream_settings(stream, bufsize = 5000, plot_data = True, ind_x = 1, ind_y = 2, plot_nth_point = 10)
+        datastream.set_stream_settings(stream, bufsize = 25000, plot_data = True, ind_x = 1, ind_y = 2, plot_nth_point = 10)
         datastream.plot_datastream(True)
         datastream.set_plotting_mode(mode='cont')        
         datastreams.append(datastream)
-
-        if(False):
-            datastream_xr = pyqtgraphDataStream(name = 'plotxy_xr', logging_level=logging_level)
-            stream_xr = datastream_xr.subscribe_stream(addr)
-            datastream_xr.init_stream_settings(stream_xr, bufsize = 5000, plot_data = True, ind_x = 1, ind_y = 2, plot_nth_point = 6)
-            datastream_xr.plot_datastream(True)
-            datastream_xr.set_plotting_mode(mode='xr',xl=5)        
-            datastreams.append(datastream_xr)        
 
 
     app = QtWidgets.QApplication([])
@@ -108,7 +116,7 @@ def _start_pymqds_srsplotxy(addresses):
 def main():
     print(sys.version_info)
     app = QtWidgets.QApplication(sys.argv)
-    window = srssam4logMainWindow()
+    window = srstodlMainWindow()
     window.show()
     sys.exit(app.exec_())
 

@@ -19,7 +19,7 @@ if sys.version_info >= (3,4):
           packages=['srs_gui'],
           scripts = [],
           entry_points={ 'console_scripts': ['srs_sledge=srs_gui.srs_sledge:main',\
-          'srs_sam4log=srs_gui.srs_sam4log:main'], },
+          'srs_todl=srs_gui.srs_todl:main'], },
           package_data = {'':['VERSION']},
           zip_safe=False)
 

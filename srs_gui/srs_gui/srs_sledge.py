@@ -189,7 +189,9 @@ class srsMain(QMainWindow):
         self.dtimer_int = 200 # ms        
         self.delaytimer = QTimer(self)
         self.delaytimer.setInterval(self.dtimer_int)
-        self.delaytimer_connected = [] # Functions connected to the delaytimer        
+        self.delaytimer_connected = [] # Functions connected to the delaytimer
+
+        self.use_program = None # Flag for sledge program to be used, if true, the program currently in self._prog_combo.currentText() is used
 
         self._widgets = [] # All stand-alone widgets
         # Create the menu
@@ -701,9 +703,17 @@ class srsMain(QMainWindow):
                             self.saved_programs = {}
                         
                     print(self.saved_programs)
-                    for prog in self.saved_programs:
+                    for nc,prog in enumerate(self.saved_programs):
+                        if(nc == 0): # Get first item
+                            first_prog = prog
                         print('prog:',prog)
                         self._prog_combo.addItem(prog)
+
+                        
+                    # Change the program to the first in the program list
+                    self.use_program = first_prog
+                    print('Hallo, Using program:' + first_prog)
+                    self._open_save_program()
                        
                 except Exception as exc:
                     logger.warning(funcname + ': Could not load programs:' + str(exc))
@@ -735,7 +745,8 @@ class srsMain(QMainWindow):
                 except Exception as e:
                     logger.debug(funcname + ': Writing problems:' + str(e))
                     
-        if(self.sender() == self._prog_use_bu):
+        if(( self.sender() == self._prog_use_bu ) or (self.use_program is not None)):
+            self.use_program = None
             logger.debug(funcname + ': Using program')
             pr = str(self._prog_combo.currentText())
             prog_data = self.saved_programs[pr]
