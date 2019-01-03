@@ -18,15 +18,9 @@ if sys.version_info >= (3,4):
           license='GPLv03',
           packages=['srs_gui'],
           scripts = [],
-<<<<<<< HEAD
           entry_points={ 'console_scripts': ['srs_sledge=srs_gui.srs_sledge:main',\
           'srs_todl=srs_gui.srs_todl:main'], },
-          package_data = {'':['VERSION']},
-=======
-          entry_points={ 'console_scripts': ['srs_sledge_control=srs_gui.srs_sledge:main',\
-          'srs_logger_control=srs_gui.srs_todl:main'], },
           package_data = {'':['VERSION'],'':['srs_gui_config.yaml']},
->>>>>>> 55a2b71765e38a7c8d62a9c2e80a6c09ea7c9d22
           zip_safe=False)
 
 else:

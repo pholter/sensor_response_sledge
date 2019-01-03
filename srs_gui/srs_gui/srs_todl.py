@@ -22,7 +22,8 @@ from pymqdatastream.connectors.pyqtgraph import pyqtgraphDataStream
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logger = logging.getLogger('srs_todl')
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 class srstodlMainWindow(pymqds_gui_todl.todlMainWindow):
     def __init__(self,*args,**kwargs):
@@ -80,25 +81,28 @@ def _start_pymqds_srsplotxy(addresses):
 
     logger.debug("_start_pymqds_plotxy():" + str(addresses))
 
-    logging_level = logging.DEBUG
+    #logging_level = logging.DEBUG
+    logging_level = logging.WARNING
     datastreams = []
     
     for addr in addresses:
         datastream = pyqtgraphDataStream(name = 'plotxy_cont', logging_level=logging_level)
         stream = datastream.subscribe_stream(addr)
-        print('HAllo,stream'+ str(stream))
+        #print('HAllo,stream: '+ str(stream))
         if(stream == None): # Could not subscribe
             logger.warning("_start_pymqds_plotxy(): Could not subscribe to:" + str(addr) + ' exiting plotting routine')
             return False
         
 
-        datastream.set_stream_settings(stream, bufsize = 25000, plot_data = True, ind_x = 1, ind_y = 2, plot_nth_point = 10)
+        datastream.set_stream_settings(stream, bufsize = 200000, plot_data = True, ind_x = 1, ind_y = 2, plot_nth_point = 1)
+        datastream.get_plot_modes()
         datastream.plot_datastream(True)
         datastream.set_plotting_mode(mode='cont')        
         datastreams.append(datastream)
-
+        
 
     app = QtWidgets.QApplication([])
+    print('DATASTREAMS',datastreams)
     plotxywindow = srs_plotxy.srspyqtgraphMainWindow(datastream=datastreams[0])
     #plotxywindow = pymqds_plotxy.pyqtgraphMainWindow(datastream=datastreams[0])
     if(False):
