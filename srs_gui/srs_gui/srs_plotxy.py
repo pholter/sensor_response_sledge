@@ -122,20 +122,20 @@ class pg_measure(QtWidgets.QWidget):
             # Make a matplotlib plot for fancy plot
             # TODO, create a name
             sensorname = self.line_sensorname.text()
-            sensorspeed = self.line_sensorspeed.text()
-            comment = self.line_sensorcomment.text()            
-            tnow = datetime.datetime.now()
-            tstr = tnow.strftime('%Y-%m-%d_%H%M')
-            ms_str= '{:04.1f}'.format(self.tfac*1000)
-            filename = self.dpath + tstr + '_' + sensorname + '_' + sensorspeed + '_ms-1_' + '_' + comment + '_rp' + ms_str
-            print('filename',filename)
-            ind_start = np.where(self.meas_ind)[0][0]
+            sensorspeed= self.line_sensorspeed.text()
+            comment    = self.line_sensorcomment.text()            
+            tnow       = datetime.datetime.now()
+            tstr       = tnow.strftime('%Y-%m-%d_%H%M')
+            ms_str     = '{:04.1f}'.format(self.tfac*1000)
+            ind_start  = np.where(self.meas_ind)[0][0]
             indfac_abs = np.where(self.meas_ind)[0][self.indfac]
-            indfac = self.x * 0
+            filename   = self.dpath + tstr + '-' + str(ind_start) + '-' + str(indfac_abs) + '_' + sensorname + '_' + sensorspeed + '_ms-1_' + '_' + comment + '_rp' + ms_str
+            print('filename',filename)
+            indfac     = self.x * 0
             indfac[self.meas_ind] = 1
             indfac[indfac_abs+1:] = 0
-            data = np.asarray((self.x,self.y,self.meas_ind,indfac))
-            datafile = filename + '.txt'
+            data       = np.asarray((self.x,self.y,self.meas_ind,indfac))
+            datafile   = filename + '.txt'
             print('Saving data to file:' + datafile)
             hdrstr = 'Response time file of sensor ' + str(sensorname) + ' with speed ' + sensorspeed
             np.savetxt(datafile,data,fmt='%010.6f',header=hdrstr)
