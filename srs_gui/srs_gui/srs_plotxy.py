@@ -118,6 +118,17 @@ class pg_measure(QtWidgets.QWidget):
         """
         print('Save',len(self.vlines))        
         if(len(self.vlines) >= 2): # A start and end lines is defined
+            ms_str     = '{:04.1f}'.format(self.tfac*1000)
+            ind_start  = np.where(self.meas_ind)[0][0]
+            indfac_abs = np.where(self.meas_ind)[0][self.indfac]
+        else:
+            self.tfac  = 0
+            ms_str     = '{:04.1f}'.format(0)
+            ind_start  = 0
+            indfac_abs = 0
+            self.meas_ind = self.x > 0
+            self.meas_ind[:] = True
+        if True:
             print('Save')
             # Make a matplotlib plot for fancy plot
             # TODO, create a name
@@ -125,10 +136,7 @@ class pg_measure(QtWidgets.QWidget):
             sensorspeed= self.line_sensorspeed.text()
             comment    = self.line_sensorcomment.text()            
             tnow       = datetime.datetime.now()
-            tstr       = tnow.strftime('%Y-%m-%d_%H%M')
-            ms_str     = '{:04.1f}'.format(self.tfac*1000)
-            ind_start  = np.where(self.meas_ind)[0][0]
-            indfac_abs = np.where(self.meas_ind)[0][self.indfac]
+            tstr       = tnow.strftime('%Y-%m-%d_%H%M%S')
             filename   = self.dpath + tstr + '-' + str(ind_start) + '-' + str(indfac_abs) + '_' + sensorname + '_' + sensorspeed + '_ms-1_' + '_' + comment + '_rp' + ms_str
             print('filename',filename)
             indfac     = self.x * 0

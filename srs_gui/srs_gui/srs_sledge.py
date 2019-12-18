@@ -366,6 +366,10 @@ class srsWidget(QWidget):
         self._proggoup_check = QCheckBox()
         self._proggoup_check.setText('Go up first')
         self._proggoup_check.setChecked(True)
+        
+        self._proggouplater_check = QCheckBox()
+        self._proggouplater_check.setText('Go up when done')
+        self._proggouplater_check.setChecked(True)
 
         self._prog_combo = QComboBox(self)
         self._prog_use_bu = QPushButton('Use program')
@@ -374,15 +378,16 @@ class srsWidget(QWidget):
         self._prog_save_bu.clicked.connect(self._open_save_program)
 
         proglayout.addWidget(QLabel('Program '),0,0)
-        proglayout.addWidget(self.prog_status_bu,1,2)                
-        proglayout.addWidget(self.prog_goup_bu,2,2)        
-        proglayout.addWidget(self.prog_start_bu,3,2,2,1)
-        proglayout.addWidget(self.prog_stop_bu,5,2,2,1)
+        proglayout.addWidget(self.prog_status_bu,1,2,1,2)                
+        proglayout.addWidget(self.prog_goup_bu,2,2,1,2)        
+        proglayout.addWidget(self.prog_start_bu,3,2,2,2)
+        proglayout.addWidget(self.prog_stop_bu,5,2,2,2)
         proglayout.addWidget(self._proggoup_check,7,2)
-        proglayout.addWidget(QLabel('Programs'),8,2)        
-        proglayout.addWidget(self._prog_combo,9,2)
-        proglayout.addWidget(self._prog_use_bu,10,2)     
-        proglayout.addWidget(self._prog_save_bu,11,2)
+        proglayout.addWidget(self._proggouplater_check,7,3)
+        proglayout.addWidget(QLabel('Programs'),8,2,1,2)        
+        proglayout.addWidget(self._prog_combo,9,2,1,2)
+        proglayout.addWidget(self._prog_use_bu,10,2,1,2)     
+        proglayout.addWidget(self._prog_save_bu,11,2,1,2)
         
         proglayout.addWidget(QLabel('Start frequency [Hz]'),1,1)
         proglayout.addWidget(self.prog1_spin,1,0)
@@ -1159,13 +1164,14 @@ class srsWidget(QWidget):
                         logger.debug(funcname + ': Disconnect: ' + str(e))  
 
                     # Go automatically up after two seconds
-                    time.sleep(2)
-                    self.send_freq(self._man_freq)            
-                    self.send_up()            
-                    self._go_up = True
-                    self.delaytimer.timeout.connect(self.send_enable)
-                    self.delaytimer_connected.append(self.send_enable)
-                    self.delaytimer.start()        
+                    if self._proggouplater_check.isChecked():
+                        time.sleep(2)
+                        self.send_freq(self._man_freq)            
+                        self.send_up()            
+                        self._go_up = True
+                        self.delaytimer.timeout.connect(self.send_enable)
+                        self.delaytimer_connected.append(self.send_enable)
+                        self.delaytimer.start()        
                                             
                 if(ind3 == 0):
                     self.prog_status_bu.setText('ACC')
