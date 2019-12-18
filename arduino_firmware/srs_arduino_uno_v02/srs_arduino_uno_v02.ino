@@ -81,7 +81,7 @@ void setup_timer2()
    // Timer2 8b bit
    TCCR2A = 0;
    TCCR2B = 0;
-   OCR2A = 125; // 1000Hz with 16e6/128/OCR2A or 62.5 Hz with 16e6/1024/OCR2A
+   OCR2A = 250; // 500Hz with 16e6/128/OCR2A or 62.5 Hz with 16e6/1024/OCR2A
    //TCCR2B |= (1<<3);// | (1<<WGM12); // CTC Mode
    TCCR2B |= (1<<WGM12); // CTC Mode
    TCCR2B |= (1 << CS12) | (1 << CS10); // 128 prescaler
@@ -161,10 +161,13 @@ int tcount = 0;
 int t2Hzcount = 0;
 int t100Hzcount = 0;
 unsigned int tspeedcount = 0; // For counting
-uint8_t flagA3=0;
-uint8_t flagA4=0;
+int flagA3=0;
+int flagA4=0;
+int progA3=0;
+int progA4=0;
 uint32_t counterA3 = 0;
 uint32_t counterA4 = 0;
+unsigned int counterspeed = 0;
 uint8_t flagspeedmeasured=0;
 
 uint8_t senA2 = 0;
@@ -440,7 +443,10 @@ void loop() {
         tspeedcount = 0; // For counting
         flagA3=0;
         flagA4=0;
+        progA3=0;
+        progA4=0;
         flagspeedmeasured=0;
+        counterspeed = 0;
 	    }
 	}
     }
@@ -485,40 +491,40 @@ void loop() {
 	    {
               Serial.print(">>>Const\n");
 	      //if(program_i < Pcom[3])
-              if((step_counter_ena - step_counter_prog) < Pcom[3])
+         if((step_counter_ena - step_counter_prog) < Pcom[3])
 	        {
-		  program_i ++;
+		        program_i ++;
 	        }
-	      else
+	        else
 	        {
-		  program_state = 2;
+		        program_state = 2;
 	        }
 	    }
 	  if(program_state == 2) // deceleration
 	    {
-              Serial.print(">>>DCC\n");
+        Serial.print(">>>DCC\n");
 	      if(frequency_prog > Pcom[5])
 	        {
                   // We have uint16_t so check if its positive
                   if((frequency_prog - Pcom[4]) > 0)
-		    frequency_prog = frequency_prog - Pcom[4];
+		                frequency_prog = frequency_prog - Pcom[4];
                   else
                     frequency_prog = Pcom[5];
 	        }
 	      else
 	        {
-		  frequency_prog = Pcom[5];
-		  program_state = 3;	
+		        frequency_prog = Pcom[5];
+		        program_state = 3;	
 	        }
 	    }
 
           if(program_state < 3)
           {
-	    dutytime = frequency_to_dutytime(frequency_prog);
+	          dutytime = frequency_to_dutytime(frequency_prog);
             freq_tmp = dutytime_to_frequency(dutytime);
             sprintf(txt_buffer2,">>>Dty: %u,freq %u,freq prog: %u\n",dutytime,freq_tmp,frequency_prog);	
             setup_timer1(dutytime);      
-	    Serial.print(txt_buffer2);
+	          Serial.print(txt_buffer2);
           }
           if(program_state == 3)
           {
@@ -546,10 +552,11 @@ void loop() {
   digitalWrite(3, senA3_tmp); // 
   digitalWrite(2, senA2_tmp); //   
   // Do we have a speed measurement?
-  if(flagspeedmeasured)
+  if(flagspeedmeasured==1)
   {
-    sprintf(txt_buffer2,">>>Speed: cnt A3, %u, cnt A4, %u, flg A3, %d, flg A4 %d\n",counterA3,counterA4,flagA3,flagA4); 
-    flagspeedmeasured = 0;       
+    //sprintf(txt_buffer2,">>>Speed: cnt, %u, flg A3, %d, flg A4, %d,progA3 %d,progA4,%d\n",counterspeed,flagA3,flagA4,progA3,progA4); 
+    sprintf(txt_buffer2,">>>Speed:cnt, %u,progA3 %d,progA4,%d\n",counterspeed,progA3,progA4); 
+    flagspeedmeasured = 2;       
     Serial.print(txt_buffer2);
   }
   
@@ -661,28 +668,36 @@ ISR(TIMER2_COMPA_vect)
   //uint8_t flagA3=0;
   //uint8_t flagA4=0;
   //uint8_t flagspeedmeasured=0;
+  //if(0)
   if(flagspeedmeasured==0)
   {
-    if((program_state > 0) && (program_state < 4))
+    if((program_state > 0) && (program_state < 3))
     {
       if((flagA3 == 0) && (senA3_tmp > 0)) // Sledge reached A3 the first time
       {
-        flagA3 = program_state;
-        counterA3 = counter;
+        progA3 = program_state;
+        flagA3 = 1;
+        //counterA3 = counter;
       }
-      if((flagA4 == 0) && (senA4_tmp > 0)) // Sledge reached A3 the first time
+      if((flagA3 > 0) && (flagA4 == 0))
       {
-        flagA4 = program_state;
-        counterA4 = counter;
+        counterspeed++;
       }
-      if((flagA4 > 0) && (flagA4>0))
+      if((flagA4 == 0) && (senA4_tmp > 0)) // Sledge reached A4 the first time
+      {
+        progA4 = program_state;
+        flagA4 = 1;
+        //counterA4 = counter;
+        counterspeed ++;
+      }
+      if((flagA3 > 0) && (flagA4>0))
       {
         flagspeedmeasured=1;
       }
     }
   }
   
-  if(t100Hzcount >= 10) // 100 Hz
+  if(t100Hzcount >= 10) // 50 Hz
     {
       senA5_send = senA5;
       senA4_send = senA4;
@@ -722,7 +737,7 @@ ISR(TIMER2_COMPA_vect)
     
   
     
-  if(t2Hzcount >= 500) // 2 Hz
+  if(t2Hzcount >= 241) // 2 Hz
   {
     
     LED = LED ^1;
@@ -732,5 +747,3 @@ ISR(TIMER2_COMPA_vect)
   }
 
 }
-
-

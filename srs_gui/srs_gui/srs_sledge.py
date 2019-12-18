@@ -19,6 +19,8 @@ import logging
 import datetime
 import os
 import psutil
+import pkg_resources
+import shutil
 
 # Import qt
 try:
@@ -74,10 +76,10 @@ def serial_ports():
     result = []
     for port in ports:
         try:
-            logger.debug("serial_ports(): Testing serial port " + str(port))
+            #logger.debug("serial_ports(): Testing serial port " + str(port))
             ret = test_serial_lock_file(port,brutal=True)
             if(ret == False):
-                logger.debug("serial_ports(): Opening serial port " + str(port))
+                #logger.debug("serial_ports(): Opening serial port " + str(port))
                 s = serial.Serial(port)
                 s.close()
                 result.append(port)
@@ -307,7 +309,7 @@ class srsWidget(QWidget):
         # Frequency increase min. counter with 25 Hz: 1 Hz/(1/25.s)
 
         freq_inc_min = 1/(1/self.freq_prog_counter)
-        freq_inc_max = 10000 # [Hz/s]
+        freq_inc_max = 50000 # [Hz/s]
 
         self.prog_start_bu = QPushButton('\n Start\n ')
         self.prog_start_bu.clicked.connect(self._do_program)
@@ -516,7 +518,17 @@ class srsWidget(QWidget):
         # For the speed measurement (self.meas_speed)
         self.speed_meas_state = 0
         
-        with open("srs_config.yaml", 'r') as stream:
+        try:
+            fname = "srs_config.yaml"
+            f = open(fname, 'r')   
+            f.close()
+        except Exception as e:
+            print('Did not find local srs_config.yaml, will open standard')
+            fname = pkg_resources.resource_filename('srs_gui','srs_config.yaml')
+            
+        print('fname',fname)
+        stream = open(fname, 'r')
+        if True:
             try:
                 config = yaml.load(stream)
                 self._total_steps = config['total_steps']
@@ -652,7 +664,7 @@ class srsWidget(QWidget):
 
 
         if(self.sender() == self.prog_goup_bu):
-            logger.debug(funcname + ': Go up')
+            #logger.debug(funcname + ': Go up')
             self.send_freq(self._man_freq)            
             self.send_up()            
             self._go_up = True
@@ -714,6 +726,15 @@ class srsWidget(QWidget):
             #fname = fname[0]
             fname = self.programs_filename
             logger.debug(funcname + ': Opening file:' + fname)
+            if(os.path.exists(fname)):
+                print('Using local program file')
+            else:
+                fname_std = pkg_resources.resource_filename('srs_gui','programs.yaml')
+                cwd = os.getcwd()
+                fname = cwd + '/' + 'programs_local.yaml'
+                shutil.copy(fname_std,fname)
+            
+            print('Program file',fname)
             self.program_filename = fname
             if(os.path.exists(fname)):
                 self.program_file = open(fname, 'r+')
@@ -977,7 +998,7 @@ class srsWidget(QWidget):
         self._serial_textwidget.setReadOnly(True) 
         self._serial_textwidget.clear()
         self._serial_textwidget.insertPlainText('Speed records')
-        self._serial_textwidget.setMaximumBlockCount(10000)
+        self._serial_textwidget.setMaximumBlockCount(50000)
         self._serial_textwidget.show()
             
 
@@ -1008,6 +1029,24 @@ class srsWidget(QWidget):
                 ind3 = datastr.find(">>>ACC")
                 ind4 = datastr.find(">>>Const")
                 ind5 = datastr.find(">>>DCC")
+                ind6 = datastr.find(">>>Speed")
+                # A speed packet
+                if(ind6 == 0):
+                    print('SPEED')
+                    d = datastr[ind6:]
+                    speedcnt = float(d.split(',')[1])
+                    
+                    dt = speedcnt/500. # 500 Hz
+                    speed_local = self._speed_length/dt
+                    speed_str = 'Speed:' + '{:5.3f}'.format(speed_local) + ' m/s'
+                    print(d)
+                    print(speedcnt)
+                    print('SPEED',speed_local)
+                    self.speedpwidget = QWidget() # The sensor output
+                    layout = QGridLayout(self.speedpwidget) 
+                    label = QLabel(speed_str)
+                    layout.addWidget(label,0,0)
+                    self.speedpwidget.show()                        
                 # A step counter and PWM freq packet
                 if(ind0 > 0):
                     #logger.debug(funcname + ': Counter/PWM Freq string: ' + datastr)
@@ -1034,7 +1073,7 @@ class srsWidget(QWidget):
                     d = datastr[ind1:].rsplit(',')
                     if(len(d) > 4):
                         try:
-                            t = int(d[0])/500. # 500 Hz
+                            t = int(d[0])/500. # 1000 Hz
                             self.sensor_data[0].append(t)
                             self.actual_sensor_data = [] # [t,a5,a4,a3,a2]
                             self.actual_sensor_data.append(t)
@@ -1068,11 +1107,11 @@ class srsWidget(QWidget):
                             # Check if we have to care about top/bottom
                             if((self._stop_check.isChecked()) or (self._go_up)):
                                 if((self.sensor_up > 0) and (self.direction_up == self.direction)):
-                                    logger.debug(funcname + ':Reached top!')
+                                    #logger.debug(funcname + ':Reached top!')
                                     self.buttonReleased()
                                     self._go_up = False
                                 if((self.sensor_down > 0) and (self.direction_down == self.direction)):
-                                    logger.debug(funcname + ':Reached bottom!')
+                                    #logger.debug(funcname + ':Reached bottom!')
                                     self.buttonReleased()                                    
                             if(self._proggoup_check.isChecked()):
                                 if((self.sensor_up > 0)):
@@ -1102,6 +1141,8 @@ class srsWidget(QWidget):
                     
                 if(ind2 == 0):
                     self.prog_status_bu.setText('Done')
+                    
+                    
                     self.button_meas_speed.setEnabled(True)
                     self.speed_meas_state = 0
                     self._doing_program = False
@@ -1115,7 +1156,17 @@ class srsWidget(QWidget):
                     try:
                         self.delaytimer.timeout.disconnect()
                     except Exception as e:
-                        logger.debug(funcname + ': Disconnect: ' + str(e))                                                        
+                        logger.debug(funcname + ': Disconnect: ' + str(e))  
+
+                    # Go automatically up after two seconds
+                    time.sleep(2)
+                    self.send_freq(self._man_freq)            
+                    self.send_up()            
+                    self._go_up = True
+                    self.delaytimer.timeout.connect(self.send_enable)
+                    self.delaytimer_connected.append(self.send_enable)
+                    self.delaytimer.start()        
+                                            
                 if(ind3 == 0):
                     self.prog_status_bu.setText('ACC')
                 if(ind4 == 0):
@@ -1256,7 +1307,7 @@ class srsWidget(QWidget):
 
     def send_stop(self):
         funcname = self.__class__.__name__ + '.send_stop()'
-        logger.debug(funcname)        
+        #logger.debug(funcname)        
         if(self.serial_open):
             self.ser.write('s'.encode('utf-8'))
             #self.infotext.insertPlainText('send_stop(): s')
@@ -1305,7 +1356,7 @@ class srsWidget(QWidget):
 
     def buttonReleased(self):
         funcname = self.__class__.__name__ + '.buttonReleased()'
-        logger.debug(funcname)
+        #logger.debug(funcname)
         sender = self.sender()
         self.send_stop()
         if(self.delaytimer.isActive()):
